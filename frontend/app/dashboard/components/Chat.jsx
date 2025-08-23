@@ -1,3 +1,4 @@
+import "./Chat.css"
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useState } from 'react'
 
@@ -28,6 +29,7 @@ function Chat({file}) {
                     #you have the multiliguel ability to talk in all of the three language listed hindi english and marathi but your respone should match the format of user
                     eg: if a user writes marathi in english reply in marathi but using english alphabets and if he uses marathi character to have a communication with you use marathi character only
                     #when a user ask you questions explain then topics cleary with followup question and same and relevent topics(keep it string no markdown or json)(less than 200 words)
+                    #explain r reply what the user has asked for and then below list the questions in point rather than a conversation flow paragraph
 
                     Chat history: ${JSON.stringify(messages)}
                   `,
@@ -56,7 +58,7 @@ function Chat({file}) {
                 {
                     messages.map((msg)=>(
                         <div className={msg.role} key={msg.text}>
-                            <p className="text-lg text-indigo-200/65">{msg.text}</p>
+                            <p>{msg.text}</p>
                         </div>
                     ))
                 }
@@ -65,7 +67,6 @@ function Chat({file}) {
         }
 
         <div className="input-area space-y-5">
-
         		<input
                 value={input}
                 onChange={(e)=>setInput(e.target.value)}
@@ -73,7 +74,8 @@ function Chat({file}) {
                 className="mt-5 form-input w-full"
                 placeholder="Ask any question about the uploaded document..."
             />
-            <button className="btn-sm bg-linear-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] py-[5px] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]" onClick={handleSendMessage}>Send</button>
+            <button className="mt-5 btn-sm bg-linear-to-t from-indigo-600 to-indigo-500 bg-[length:100%_100%] bg-[bottom] py-[5px] text-white shadow-[inset_0px_1px_0px_0px_--theme(--color-white/.16)] hover:bg-[length:100%_150%]" onClick={handleSendMessage}>Send</button>
+
         </div>
       </section>
     )
