@@ -1,3 +1,4 @@
+import "./Summary.css";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useState, useEffect } from "react";
 import Loader from './Loader'
@@ -41,7 +42,7 @@ function Summary({file}) {
 
 
     return (
-      <section className="summary mx-auto max-w-3xl pb-12 text-center md:pb-20">
+      <section className="h-50% summary mx-auto max-w-3xl pb-12 text-center md:pb-20">
 
         <img src={file.imageUrl} alt="" />
 
@@ -54,9 +55,9 @@ function Summary({file}) {
           status === 'loading' ?
           <Loader /> :
           status === 'success' ?
-          <p className="text-lg text-indigo-200/65">{summary}</p> :
+          <p className="sum-text">{summary}</p> :
           status === 'error' ?
-          <p className="text-lg text-indigo-200/65">Error getting the summary</p> :
+          <p className="sum-error">Error getting the summary</p> :
           ''
         }
       </section>
