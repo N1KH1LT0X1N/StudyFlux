@@ -252,4 +252,4 @@ This project is licensed under the **MIT License** – free to use, modify, and 
 ## 👨‍💻 Author
 
 **[Nikhil Pise](https://github.com/N1KH1LT0X1N)**
-🚀 Passionate about AI, ML, and building meaningful EdTech solutions.
+🚀 Passionate about AI, ML, and building meaningful EdTech solutions
