@@ -41,7 +41,7 @@ Built with a **scalable MERN + Next.js stack** and powered by **AI agents**, Stu
 * **📝 Conversation Summarization**
 
   * Every interaction is summarized & stored for future sessions.
-  * Keeps personalization alive long-term.
+  * Keeps personalization alive long-term
 
 * **📂 File → Flashcards/Q\&A Workflow**
 
