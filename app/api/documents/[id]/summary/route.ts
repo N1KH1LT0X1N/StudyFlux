@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
 import { processDocument, extractMetadata } from "@/lib/document-processor";
+import { awardPoints } from "@/lib/gamification";
+import { updateStreak } from "@/lib/streak";
+import { POINTS } from "@/lib/constants";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 
@@ -117,25 +120,17 @@ Please respond in JSON format:
       },
     });
 
-    // Award points for generating summary
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        points: { increment: 5 },
-        lastActiveAt: new Date(),
-      },
-    });
+    // Award points and update streak
+    await awardPoints(
+      session.user.id,
+      "generate_summary",
+      POINTS.COMPLETE_SUMMARY,
+      {
+        documentId: document.id,
+      }
+    );
 
-    await prisma.pointsHistory.create({
-      data: {
-        userId: session.user.id,
-        action: "generate_summary",
-        points: 5,
-        metadata: {
-          documentId: document.id,
-        },
-      },
-    });
+    await updateStreak(session.user.id);
 
     return NextResponse.json({
       summary: analysisData.summary,

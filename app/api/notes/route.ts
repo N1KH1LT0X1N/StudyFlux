@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { awardPoints } from "@/lib/gamification";
+import { updateStreak } from "@/lib/streak";
 
 // GET - List user notes
 export async function GET(req: NextRequest) {
@@ -118,25 +120,17 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Award points for creating note
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        points: { increment: 5 },
-        lastActiveAt: new Date(),
-      },
-    });
+    // Award points and update streak
+    await awardPoints(
+      session.user.id,
+      "create_note",
+      5,
+      {
+        noteId: note.id,
+      }
+    );
 
-    await prisma.pointsHistory.create({
-      data: {
-        userId: session.user.id,
-        action: "create_note",
-        points: 5,
-        metadata: {
-          noteId: note.id,
-        },
-      },
-    });
+    await updateStreak(session.user.id);
 
     return NextResponse.json({ note });
   } catch (error) {

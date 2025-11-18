@@ -11,7 +11,8 @@ import {
   TrophyIcon,
   SettingsIcon,
   BarChartIcon,
-  StickyNoteIcon
+  StickyNoteIcon,
+  MedalIcon
 } from 'lucide-react';
 
 const navigation = [
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Progress', href: '/dashboard/progress', icon: BarChartIcon },
   { name: 'Flashcards', href: '/dashboard/flashcards', icon: BrainIcon },
   { name: 'Achievements', href: '/dashboard/achievements', icon: TrophyIcon },
+  { name: 'Leaderboard', href: '/dashboard/leaderboard', icon: MedalIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
 ];
 

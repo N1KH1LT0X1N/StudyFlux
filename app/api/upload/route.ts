@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { uploadFile } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
+import { awardPoints } from "@/lib/gamification";
+import { updateStreak } from "@/lib/streak";
+import { POINTS } from "@/lib/constants";
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -69,25 +72,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Award points for uploading a document
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        points: { increment: 10 },
-      },
-    });
+    // Award points and update streak
+    await awardPoints(
+      session.user.id,
+      "upload_document",
+      POINTS.UPLOAD_DOCUMENT,
+      {
+        documentId: document.id,
+        fileName: file.name,
+      }
+    );
 
-    await prisma.pointsHistory.create({
-      data: {
-        userId: session.user.id,
-        action: "upload_document",
-        points: 10,
-        metadata: {
-          documentId: document.id,
-          fileName: file.name,
-        },
-      },
-    });
+    await updateStreak(session.user.id);
 
     return NextResponse.json({
       message: "File uploaded successfully",

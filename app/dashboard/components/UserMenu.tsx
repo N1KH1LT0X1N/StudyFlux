@@ -2,35 +2,41 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { LogOutIcon, SettingsIcon, TrophyIcon } from 'lucide-react';
+import { LogOutIcon, SettingsIcon } from 'lucide-react';
 import Link from 'next/link';
+import LevelBadge from '@/components/gamification/LevelBadge';
 
-interface UserData {
+interface UserStats {
   points: number;
   level: number;
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
+  streak: number;
+  lastActiveAt: Date;
+  pointsForNextLevel: number;
+  levelProgress: number;
 }
 
 export default function UserMenu() {
   const { data: session } = useSession();
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    // In a real app, fetch user data from API
-    // For now, use mock data
     if (session?.user) {
-      setUserData({
-        points: 0,
-        level: 1,
-        name: session.user.name,
-        email: session.user.email,
-        image: session.user.image,
-      });
+      fetchUserStats();
     }
   }, [session]);
+
+  const fetchUserStats = async () => {
+    try {
+      const response = await fetch('/api/user/stats');
+      if (response.ok) {
+        const stats = await response.json();
+        setUserStats(stats);
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    }
+  };
 
   if (!session?.user) {
     return null;
@@ -66,14 +72,14 @@ export default function UserMenu() {
           )}
           <div className="hidden lg:block text-left">
             <p className="text-sm font-medium text-white">{session.user.name || 'User'}</p>
-            <div className="flex items-center space-x-2 text-xs text-gray-400">
-              <span className="flex items-center">
-                <TrophyIcon className="mr-1 h-3 w-3" />
-                {userData?.points || 0} pts
-              </span>
-              <span>•</span>
-              <span>Level {userData?.level || 1}</span>
-            </div>
+            {userStats && (
+              <LevelBadge
+                points={userStats.points}
+                level={userStats.level}
+                compact={true}
+                showProgress={false}
+              />
+            )}
           </div>
         </div>
       </button>

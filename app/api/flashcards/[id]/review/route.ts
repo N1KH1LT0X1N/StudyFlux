@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateNextReview } from "@/lib/spaced-repetition";
 import { FLASHCARD_QUALITY, POINTS } from "@/lib/constants";
+import { awardPoints } from "@/lib/gamification";
+import { updateStreak } from "@/lib/streak";
 
 /**
  * POST /api/flashcards/[id]/review
@@ -96,29 +98,19 @@ export async function POST(
       },
     });
 
-    // Update user points and points history
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: session.user.id },
-        data: {
-          points: {
-            increment: pointsEarned,
-          },
-        },
-      }),
-      prisma.pointsHistory.create({
-        data: {
-          userId: session.user.id,
-          action: "review_flashcard",
-          points: pointsEarned,
-          metadata: {
-            flashcardId: params.id,
-            quality,
-            documentId: flashcard.documentId,
-          },
-        },
-      }),
-    ]);
+    // Award points and update streak
+    await awardPoints(
+      session.user.id,
+      "review_flashcard",
+      pointsEarned,
+      {
+        flashcardId: params.id,
+        quality,
+        documentId: flashcard.documentId,
+      }
+    );
+
+    await updateStreak(session.user.id);
 
     // If sessionId provided, update the study session
     if (sessionId) {

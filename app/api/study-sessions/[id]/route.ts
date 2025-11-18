@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { awardPoints } from "@/lib/gamification";
+import { updateStreak } from "@/lib/streak";
+import { POINTS } from "@/lib/constants";
 
 // GET - Get session details
 export async function GET(
@@ -104,30 +107,21 @@ export async function PATCH(
 
       // Award points for completing 1 hour study session
       if (durationInHours >= 1) {
-        pointsEarned = Math.floor(durationInHours) * 20;
+        pointsEarned = Math.floor(durationInHours) * POINTS.STUDY_SESSION_PER_HOUR;
         updateData.pointsEarned = pointsEarned;
 
-        // Update user points
-        await prisma.user.update({
-          where: { id: session.user.id },
-          data: {
-            points: { increment: pointsEarned },
-            lastActiveAt: new Date(),
-          },
-        });
+        // Award points and update streak
+        await awardPoints(
+          session.user.id,
+          "complete_study_session",
+          pointsEarned,
+          {
+            sessionId: params.id,
+            duration: finalDuration,
+          }
+        );
 
-        // Create points history record
-        await prisma.pointsHistory.create({
-          data: {
-            userId: session.user.id,
-            action: "complete_study_session",
-            points: pointsEarned,
-            metadata: {
-              sessionId: params.id,
-              duration: finalDuration,
-            },
-          },
-        });
+        await updateStreak(session.user.id);
       }
     }
 
