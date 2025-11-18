@@ -112,6 +112,7 @@ model Document {
 
   @@index([userId])
   @@index([uploadedAt])
+  @@index([userId, uploadedAt])
 }
 
 // Chat history
@@ -295,4 +296,5 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read])
+  @@index([userId, read, createdAt])
 }
