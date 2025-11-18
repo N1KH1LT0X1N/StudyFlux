@@ -11,19 +11,23 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.0",
+    "@prisma/client": "^6.19.0",
     "@types/node": "^22.13.0",
     "@types/react": "19.0.8",
     "@types/react-dom": "19.0.3",
     "aos": "3.0.0-beta.6",
     "axios": "^1.11.0",
     "buffer": "^6.0.3",
+    "clsx": "^2.1.1",
     "firebase": "^12.1.0",
     "helmet": "^8.1.0",
     "lucide-react": "^0.541.0",
     "next": "15.1.6",
+    "prisma": "^6.19.0",
     "react": "19.0.0",
     "react-dom": "^19.0.0",
     "react-helmet": "^6.1.0",
+    "tailwind-merge": "^3.4.0",
     "typescript": "^5.7.3"
   },
   "devDependencies": {
