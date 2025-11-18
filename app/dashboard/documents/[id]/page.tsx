@@ -39,6 +39,7 @@ export default function DocumentDetailPage() {
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
+  const [generatingFlashcards, setGeneratingFlashcards] = useState(false);
 
   useEffect(() => {
     fetchDocument();
@@ -121,6 +122,48 @@ export default function DocumentDetailPage() {
     } catch (error) {
       console.error("Error starting study session:", error);
       toast.error("Failed to start study session");
+    }
+  };
+
+  const handleGenerateFlashcards = async () => {
+    if (!document?.summary) {
+      toast.error("Document must be summarized before generating flashcards");
+      return;
+    }
+
+    setGeneratingFlashcards(true);
+    const loadingToast = toast.loading("Generating flashcards...");
+
+    try {
+      const response = await fetch("/api/flashcards/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate flashcards");
+      }
+
+      const data = await response.json();
+      toast.success(
+        `Successfully generated ${data.count} flashcards! (+${data.pointsEarned} points)`,
+        { id: loadingToast }
+      );
+
+      // Navigate to flashcard review after a short delay
+      setTimeout(() => {
+        router.push(`/dashboard/flashcards/review?documentId=${documentId}`);
+      }, 1500);
+    } catch (error) {
+      console.error("Error generating flashcards:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate flashcards",
+        { id: loadingToast }
+      );
+    } finally {
+      setGeneratingFlashcards(false);
     }
   };
 
@@ -319,11 +362,16 @@ export default function DocumentDetailPage() {
                   Start Study Session
                 </button>
                 <button
-                  onClick={() => toast.info("Flashcards feature coming soon!")}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                  onClick={handleGenerateFlashcards}
+                  disabled={generatingFlashcards || !document?.summary}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <BookOpen className="w-5 h-5" />
-                  Generate Flashcards
+                  {generatingFlashcards ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <BookOpen className="w-5 h-5" />
+                  )}
+                  {generatingFlashcards ? "Generating..." : "Generate Flashcards"}
                 </button>
                 <button
                   onClick={() => toast.info("Quiz feature coming soon!")}

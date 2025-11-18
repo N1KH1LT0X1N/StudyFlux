@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import {
   HomeIcon,
   FileTextIcon,
@@ -26,6 +27,26 @@ const navigation = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [dueFlashcardsCount, setDueFlashcardsCount] = useState(0);
+
+  useEffect(() => {
+    const fetchDueFlashcards = async () => {
+      try {
+        const response = await fetch('/api/flashcards?dueOnly=true&limit=1');
+        if (response.ok) {
+          const data = await response.json();
+          setDueFlashcardsCount(data.dueCount || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching due flashcards:', error);
+      }
+    };
+
+    fetchDueFlashcards();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchDueFlashcards, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="hidden lg:flex lg:flex-shrink-0">
@@ -38,12 +59,13 @@ export default function Sidebar() {
             <nav className="mt-8 flex-1 space-y-1 px-2">
               {navigation.map((item) => {
                 const isActive = pathname === item.href;
+                const showBadge = item.name === 'Flashcards' && dueFlashcardsCount > 0;
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
                     className={`
-                      group flex items-center px-2 py-2 text-sm font-medium rounded-md
+                      group flex items-center justify-between px-2 py-2 text-sm font-medium rounded-md
                       ${
                         isActive
                           ? 'bg-indigo-800 text-white'
@@ -51,13 +73,20 @@ export default function Sidebar() {
                       }
                     `}
                   >
-                    <item.icon
-                      className={`
-                        mr-3 h-5 w-5 flex-shrink-0
-                        ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-300'}
-                      `}
-                    />
-                    {item.name}
+                    <div className="flex items-center">
+                      <item.icon
+                        className={`
+                          mr-3 h-5 w-5 flex-shrink-0
+                          ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-300'}
+                        `}
+                      />
+                      {item.name}
+                    </div>
+                    {showBadge && (
+                      <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500 text-white">
+                        {dueFlashcardsCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
