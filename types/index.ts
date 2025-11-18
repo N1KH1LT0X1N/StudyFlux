@@ -5,6 +5,7 @@ export interface FileData {
   imageUrl?: string;
   name?: string;
   size?: number;
+  documentId?: string;
 }
 
 // Chat message types
