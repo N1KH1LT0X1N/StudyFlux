@@ -8,14 +8,18 @@ import {
   BrainIcon,
   BookOpenIcon,
   TrophyIcon,
-  SettingsIcon
+  SettingsIcon,
+  BarChartIcon,
+  StickyNoteIcon
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'Documents', href: '/dashboard/documents', icon: FileTextIcon },
-  { name: 'Flashcards', href: '/dashboard/flashcards', icon: BrainIcon },
   { name: 'Study Sessions', href: '/dashboard/study', icon: BookOpenIcon },
+  { name: 'Notes', href: '/dashboard/notes', icon: StickyNoteIcon },
+  { name: 'Progress', href: '/dashboard/progress', icon: BarChartIcon },
+  { name: 'Flashcards', href: '/dashboard/flashcards', icon: BrainIcon },
   { name: 'Achievements', href: '/dashboard/achievements', icon: TrophyIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
 ];

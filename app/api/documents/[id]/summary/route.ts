@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
+import { processDocument, extractMetadata } from "@/lib/document-processor";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 
@@ -42,28 +43,37 @@ export async function POST(
       });
     }
 
-    // Get the file content from request body
+    // Get the file buffer from request body
     const body = await req.json();
-    const { fileContent } = body;
+    const { fileBuffer, fileType } = body;
 
-    if (!fileContent) {
+    if (!fileBuffer) {
       return NextResponse.json(
-        { error: "File content is required" },
+        { error: "File buffer is required" },
         { status: 400 }
       );
     }
+
+    // Convert base64 to buffer if needed
+    const buffer = Buffer.from(fileBuffer, "base64");
+
+    // Extract text from document using document processor
+    const { text: extractedText, metadata } = await processDocument(
+      buffer,
+      fileType || document.fileType
+    );
 
     // Generate summary using Gemini AI
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `Analyze this document and provide:
 1. A comprehensive summary (2-3 paragraphs)
-2. Key points (5-7 bullet points)
+2. Key points (5-10 bullet points)
 3. Main topics/tags (3-5 tags)
-4. Difficulty level (easy, medium, or hard)
+4. Difficulty level (easy, medium, or hard) based on content complexity
 
 Document content:
-${fileContent}
+${extractedText}
 
 Please respond in JSON format:
 {
@@ -95,7 +105,7 @@ Please respond in JSON format:
       };
     }
 
-    // Update document with generated summary
+    // Update document with generated summary and metadata
     const updatedDocument = await prisma.document.update({
       where: { id: params.id },
       data: {
@@ -103,13 +113,17 @@ Please respond in JSON format:
         keyPoints: analysisData.keyPoints,
         topics: analysisData.topics,
         difficulty: analysisData.difficulty,
+        pageCount: metadata.pageCount,
       },
     });
 
     // Award points for generating summary
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { points: { increment: 5 } },
+      data: {
+        points: { increment: 5 },
+        lastActiveAt: new Date(),
+      },
     });
 
     await prisma.pointsHistory.create({

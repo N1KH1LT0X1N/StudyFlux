@@ -1,6 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { processDocument } from "@/lib/document-processor";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,13 +12,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { file, message, chatHistory } = await request.json();
+    const { documentId, message, chatHistory } = await request.json();
 
-    if (!file || !message) {
+    if (!documentId || !message) {
       return NextResponse.json(
-        { error: "File and message are required" },
+        { error: "Document ID and message are required" },
         { status: 400 }
       );
+    }
+
+    // Fetch document from database
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      return NextResponse.json(
+        { error: "Document not found" },
+        { status: 404 }
+      );
+    }
+
+    // Check if user owns the document
+    if (document.userId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const apiKey = process.env.GOOGLE_AI_API_KEY;
@@ -28,32 +47,100 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get or create chat history for this document
+    let chatHistoryRecord = await prisma.chatHistory.findFirst({
+      where: {
+        userId: session.user.id,
+        documentId: documentId,
+      },
+    });
+
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-pro" });
 
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          data: file.file,
-          mimeType: file.type,
-        },
-      },
-      `
-        Answer this question about the attached document: ${message}.
-        Answer as a chatbot with short messages and text only (no markdowns, tags or symbols)
-        #you are a teacher assistent whose job is to provide a summary to the user and always be engaging with him
-        #you have the multiliguel ability to talk in all of the three language listed hindi english and marathi but your respone should match the format of user
-        eg: if a user writes marathi in english reply in marathi but using english alphabets and if he uses marathi character to have a communication with you use marathi character only
-        #when a user ask you questions explain then topics cleary with followup question and same and relevent topics(keep it string no markdown or json)(less than 200 words)
-        #explain r reply what the user has asked for and then below list the questions in point rather than a conversation flow paragraph
+    // Build context from document summary and key points
+    let documentContext = "";
+    if (document.summary) {
+      documentContext += `Document Summary: ${document.summary}\n\n`;
+    }
+    if (document.keyPoints) {
+      const keyPoints = Array.isArray(document.keyPoints)
+        ? document.keyPoints
+        : [];
+      if (keyPoints.length > 0) {
+        documentContext += `Key Points:\n${keyPoints.map((p: any) => `- ${p}`).join("\n")}\n\n`;
+      }
+    }
 
-        Chat history: ${JSON.stringify(chatHistory || [])}
-      `,
-    ]);
+    // Format chat history
+    const formattedHistory = chatHistory
+      ? chatHistory
+          .map((msg: any) => `${msg.role}: ${msg.content}`)
+          .join("\n")
+      : "";
 
+    const prompt = `You are a helpful teacher assistant helping students understand their study materials.
+
+${documentContext ? `Document Context:\n${documentContext}` : ""}
+
+Answer this question: ${message}
+
+Guidelines:
+- Provide clear, concise explanations (less than 200 words)
+- Use simple language appropriate for students
+- Include relevant examples if helpful
+- Suggest follow-up topics or questions at the end
+- Be engaging and encouraging
+- Support multiple languages (Hindi, English, Marathi) - match the user's language style
+
+${formattedHistory ? `Previous conversation:\n${formattedHistory}\n` : ""}`;
+
+    const result = await model.generateContent(prompt);
     const responseText = result.response.text();
 
-    return NextResponse.json({ response: responseText }, { status: 200 });
+    // Update chat history in database
+    const newMessage = {
+      role: "user",
+      content: message,
+      timestamp: new Date().toISOString(),
+    };
+    const newResponse = {
+      role: "assistant",
+      content: responseText,
+      timestamp: new Date().toISOString(),
+    };
+
+    const updatedMessages = [
+      ...(chatHistoryRecord?.messages as any[] || []),
+      newMessage,
+      newResponse,
+    ];
+
+    if (chatHistoryRecord) {
+      await prisma.chatHistory.update({
+        where: { id: chatHistoryRecord.id },
+        data: { messages: updatedMessages },
+      });
+    } else {
+      await prisma.chatHistory.create({
+        data: {
+          userId: session.user.id,
+          documentId: documentId,
+          messages: updatedMessages,
+        },
+      });
+    }
+
+    // Update user's last active time
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { lastActiveAt: new Date() },
+    });
+
+    return NextResponse.json({
+      response: responseText,
+      chatHistory: updatedMessages,
+    });
   } catch (error) {
     console.error("Error in chat API:", error);
     return NextResponse.json(
