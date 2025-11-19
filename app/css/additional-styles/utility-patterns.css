@@ -53,3 +53,17 @@ input[type='search']::-webkit-search-results-decoration {
 .form-checkbox {
     @apply rounded-xs;
 }
+
+/* Flashcard flip animation */
+.perspective-1000 {
+    perspective: 1000px;
+}
+
+.backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.preserve-3d {
+    transform-style: preserve-3d;
+}

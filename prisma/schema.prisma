@@ -1,0 +1,300 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profile
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  password      String?   // For email/password auth
+
+  // Gamification
+  points        Int       @default(0)
+  level         Int       @default(1)
+  streak        Int       @default(0)
+  lastActiveAt  DateTime  @default(now())
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  documents     Document[]
+  chatHistories ChatHistory[]
+  flashcards    Flashcard[]
+  studySessions StudySession[]
+  achievements  UserAchievement[]
+  pointsHistory PointsHistory[]
+  notes         Note[]
+  quizAttempts  QuizAttempt[]
+  notifications Notification[]
+
+  @@index([email])
+}
+
+// NextAuth models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Document model
+model Document {
+  id              String    @id @default(cuid())
+  userId          String
+  title           String
+  fileName        String
+  fileUrl         String
+  fileType        String    // pdf, jpg, png
+  fileSize        Int
+
+  // AI-generated content
+  summary         String?   @db.Text
+  keyPoints       Json?     // Array of key points
+  topics          Json?     // Extracted topics/tags
+  difficulty      String?   // easy, medium, hard
+
+  pageCount       Int?
+  uploadedAt      DateTime  @default(now())
+  lastAccessedAt  DateTime  @default(now())
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chatHistories   ChatHistory[]
+  flashcards      Flashcard[]
+  studySessions   StudySession[]
+  notes           Note[]
+  quizzes         Quiz[]
+
+  @@index([userId])
+  @@index([uploadedAt])
+  @@index([userId, uploadedAt])
+}
+
+// Chat history
+model ChatHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  documentId  String
+  messages    Json     // Array of {role, content, timestamp}
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, documentId])
+}
+
+// Flashcards
+model Flashcard {
+  id              String   @id @default(cuid())
+  userId          String
+  documentId      String
+
+  front           String   @db.Text  // Question
+  back            String   @db.Text  // Answer
+  hint            String?  @db.Text
+
+  // Spaced Repetition (SM-2 Algorithm)
+  repetitions     Int      @default(0)
+  easinessFactor  Float    @default(2.5)
+  interval        Int      @default(1)  // days
+  nextReview      DateTime @default(now())
+
+  lastReviewed    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document        Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, nextReview])
+  @@index([documentId])
+}
+
+// Study sessions
+model StudySession {
+  id                  String    @id @default(cuid())
+  userId              String
+  documentId          String?
+
+  duration            Int       @default(0)  // seconds
+  questionsAsked      Int       @default(0)
+  flashcardsReviewed  Int       @default(0)
+  pointsEarned        Int       @default(0)
+
+  startedAt           DateTime  @default(now())
+  endedAt             DateTime?
+
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document            Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([startedAt])
+}
+
+// Achievements
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String
+  icon        String
+  points      Int
+  tier        String   // bronze, silver, gold, platinum
+  condition   Json     // {type: "streak", value: 7}
+
+  createdAt   DateTime @default(now())
+
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+// Points history
+model PointsHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // "upload_document", "review_flashcard", etc.
+  points    Int
+  metadata  Json?    // Additional context
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// Notes
+model Note {
+  id          String    @id @default(cuid())
+  userId      String
+  documentId  String?
+  title       String
+  content     String    @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document    Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+// Quizzes
+model Quiz {
+  id          String         @id @default(cuid())
+  userId      String
+  documentId  String
+  title       String
+  createdAt   DateTime       @default(now())
+
+  document    Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  questions   QuizQuestion[]
+  attempts    QuizAttempt[]
+
+  @@index([userId])
+  @@index([documentId])
+}
+
+model QuizQuestion {
+  id            String  @id @default(cuid())
+  quizId        String
+  question      String  @db.Text
+  options       Json    // Array of options
+  correctAnswer String
+  explanation   String? @db.Text
+
+  quiz          Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+}
+
+model QuizAttempt {
+  id             String   @id @default(cuid())
+  quizId         String
+  userId         String
+  score          Int
+  totalQuestions Int
+  answers        Json     // User's answers
+  completedAt    DateTime @default(now())
+
+  quiz           Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([quizId])
+}
+
+// Notifications
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "flashcard_due", "achievement_unlocked", "streak_risk"
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, read, createdAt])
+}
