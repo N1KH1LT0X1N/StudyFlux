@@ -1,10 +1,21 @@
 import { prisma } from './prisma';
-import { Achievement } from '@prisma/client';
 
 interface AchievementCondition {
   type: string;
   value: number;
   field?: string;
+}
+
+interface Achievement {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  icon: string;
+  points: number;
+  tier: string;
+  condition: any;
+  createdAt: Date;
 }
 
 /**
@@ -115,7 +126,7 @@ export async function checkAndAwardAchievements(
       select: { achievementId: true },
     });
 
-    const unlockedIds = new Set(userAchievements.map((ua) => ua.achievementId));
+    const unlockedIds = new Set(userAchievements.map((ua: any) => ua.achievementId));
     const newlyAwarded: Achievement[] = [];
 
     // Check each achievement
@@ -217,11 +228,11 @@ export async function getAchievementProgress(userId: string) {
       },
     });
 
-    const unlockedIds = new Set(userAchievements.map((ua) => ua.achievementId));
+    const unlockedIds = new Set(userAchievements.map((ua: any) => ua.achievementId));
 
     // Calculate progress for locked achievements
     const achievementsWithProgress = await Promise.all(
-      allAchievements.map(async (achievement) => {
+      allAchievements.map(async (achievement: any) => {
         const isUnlocked = unlockedIds.has(achievement.id);
         let progress = 0;
         let currentValue = 0;
@@ -301,7 +312,7 @@ export async function getAchievementProgress(userId: string) {
         }
 
         const unlockedData = userAchievements.find(
-          (ua) => ua.achievementId === achievement.id
+          (ua: any) => ua.achievementId === achievement.id
         );
 
         return {

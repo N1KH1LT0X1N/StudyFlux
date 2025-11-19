@@ -11,7 +11,8 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
     // Dynamic import for pdf-parse to avoid ESM issues
-    const pdfParse = (await import("pdf-parse")).default;
+    const pdfParseModule = await import("pdf-parse");
+    const pdfParse = (pdfParseModule.default || pdfParseModule) as any;
     const data = await pdfParse(buffer);
     return data.text;
   } catch (error) {

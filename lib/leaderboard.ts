@@ -74,7 +74,7 @@ export async function getLeaderboard(
       });
 
       // Get user details for the top scorers
-      const userIds = pointsInPeriod.map((p) => p.userId);
+      const userIds = pointsInPeriod.map((p: any) => p.userId);
       const userDetails = await prisma.user.findMany({
         where: {
           id: {
@@ -92,11 +92,11 @@ export async function getLeaderboard(
       });
 
       // Create a map for quick lookup
-      const userMap = new Map(userDetails.map((u) => [u.id, u]));
+      const userMap = new Map(userDetails.map((u: any) => [u.id, u]));
 
       // Combine points in period with user details
       users = pointsInPeriod
-        .map((p) => {
+        .map((p: any) => {
           const user = userMap.get(p.userId);
           if (!user) return null;
 
@@ -105,11 +105,11 @@ export async function getLeaderboard(
             periodPoints: p._sum.points || 0,
           };
         })
-        .filter((u) => u !== null) as any[];
+        .filter((u: any) => u !== null) as any[];
     }
 
     // Add rank to each entry
-    const leaderboard: LeaderboardEntry[] = users.map((user, index) => ({
+    const leaderboard: LeaderboardEntry[] = users.map((user: any, index: number) => ({
       rank: index + 1,
       userId: user.id,
       name: user.name,
@@ -197,7 +197,7 @@ export async function getUserRank(
       });
 
       const higherRankedCount = allUserPoints.filter(
-        (up) => (up._sum.points || 0) > userPeriodPoints
+        (up: any) => (up._sum.points || 0) > userPeriodPoints
       ).length;
 
       return higherRankedCount + 1;
