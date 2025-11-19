@@ -1,0 +1,40 @@
+.sum-text {
+	font-size: 0.875rem; /* 14px */
+  line-height: 1.25rem; /* 20px */
+ 	background: linear-gradient(
+    to right,
+    var(--color-gray-200),
+    var(--color-indigo-200),
+    var(--color-gray-50),
+    var(--color-indigo-300),
+    var(--color-gray-200)
+  );
+  background-size: 200% auto;
+
+  /* gradient animation */
+  animation: gradient 6s linear infinite;
+
+  /* text styles */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+
+  /* spacing + typography */
+  padding-bottom: 1.25rem; /* pb-5 */
+  font-family: var(--font-nacelle, sans-serif); /* font-nacelle */
+  font-weight: 600; /* font-semibold */
+}
+
+@media (min-width: 768px) {
+  .gradient-text {
+    font-size: 3rem; /* md:text-5xl */
+  }
+}
+
+/* keyframes from animate-[gradient_6s_linear_infinite] */
+@keyframes gradient {
+  to {
+    background-position: 200% center;
+  }
+}
