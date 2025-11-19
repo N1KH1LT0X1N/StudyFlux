@@ -9,11 +9,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export const metadata = {
-  title: "Sign Up - StudyFlux",
-  description: "Create your StudyFlux account",
-};
-
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),

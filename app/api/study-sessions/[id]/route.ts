@@ -8,16 +8,17 @@ import { POINTS } from "@/lib/constants";
 // GET - Get session details
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const studySession = await prisma.studySession.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         document: {
           select: {
@@ -53,16 +54,17 @@ export async function GET(
 // PATCH - Update session (end session, update metrics)
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const studySession = await prisma.studySession.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!studySession) {
@@ -116,7 +118,7 @@ export async function PATCH(
           "complete_study_session",
           pointsEarned,
           {
-            sessionId: params.id,
+            sessionId: id,
             duration: finalDuration,
           }
         );
@@ -126,7 +128,7 @@ export async function PATCH(
     }
 
     const updatedSession = await prisma.studySession.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
       include: {
         document: {
@@ -154,16 +156,17 @@ export async function PATCH(
 // DELETE - Delete session
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const studySession = await prisma.studySession.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!studySession) {
@@ -179,7 +182,7 @@ export async function DELETE(
     }
 
     await prisma.studySession.delete({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     return NextResponse.json({ message: "Study session deleted successfully" });

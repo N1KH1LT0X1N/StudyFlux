@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
+
 import { prisma } from "@/lib/prisma";
 
 // GET: List all quizzes for the current user
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -44,13 +44,13 @@ export async function GET(req: NextRequest) {
     });
 
     // Format response with question count and best score
-    const formattedQuizzes = quizzes.map((quiz) => ({
+    const formattedQuizzes = quizzes.map((quiz: any) => ({
       ...quiz,
       questionCount: quiz.questions.length,
       lastAttempt: quiz.attempts[0] || null,
       bestScore:
         quiz.attempts.length > 0
-          ? Math.max(...quiz.attempts.map((a) => a.score))
+          ? Math.max(...quiz.attempts.map((a: any) => a.score))
           : null,
     }));
 
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
 // POST: Create a manual quiz (optional feature)
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

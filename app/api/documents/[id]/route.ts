@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // GET - Get a single document
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -14,9 +14,10 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const document = await prisma.document.findUnique({
       where: {
-        id: params.id,
+        id,
       },
     });
 
@@ -34,7 +35,7 @@ export async function GET(
 
     // Update last accessed time
     await prisma.document.update({
-      where: { id: params.id },
+      where: { id: id },
       data: { lastAccessedAt: new Date() },
     });
 
@@ -51,16 +52,17 @@ export async function GET(
 // PATCH - Update a document
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const document = await prisma.document.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!document) {
@@ -94,7 +96,7 @@ export async function PATCH(
     }
 
     const updatedDocument = await prisma.document.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
     });
 
@@ -111,16 +113,17 @@ export async function PATCH(
 // DELETE - Delete a document
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const document = await prisma.document.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!document) {
@@ -151,7 +154,7 @@ export async function DELETE(
 
     // Delete document from database
     await prisma.document.delete({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     return NextResponse.json({ message: "Document deleted successfully" });

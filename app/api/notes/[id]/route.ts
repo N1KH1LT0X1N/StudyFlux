@@ -5,16 +5,17 @@ import { prisma } from "@/lib/prisma";
 // GET - Get a single note
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const note = await prisma.note.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         document: {
           select: {
@@ -47,16 +48,17 @@ export async function GET(
 // PATCH - Update a note
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const note = await prisma.note.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!note) {
@@ -101,7 +103,7 @@ export async function PATCH(
     }
 
     const updatedNote = await prisma.note.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
       include: {
         document: {
@@ -132,16 +134,17 @@ export async function PATCH(
 // DELETE - Delete a note
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const note = await prisma.note.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!note) {
@@ -154,7 +157,7 @@ export async function DELETE(
     }
 
     await prisma.note.delete({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     return NextResponse.json({ message: "Note deleted successfully" });

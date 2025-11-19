@@ -12,16 +12,17 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 // POST - Generate summary for a document
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const document = await prisma.document.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!document) {
@@ -110,7 +111,7 @@ Please respond in JSON format:
 
     // Update document with generated summary and metadata
     const updatedDocument = await prisma.document.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         summary: analysisData.summary,
         keyPoints: analysisData.keyPoints,

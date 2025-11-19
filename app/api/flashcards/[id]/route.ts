@@ -8,16 +8,17 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const flashcard = await prisma.flashcard.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         document: {
           select: {
@@ -56,16 +57,17 @@ export async function GET(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const flashcard = await prisma.flashcard.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!flashcard) {
@@ -98,7 +100,7 @@ export async function PATCH(
     }
 
     const updatedFlashcard = await prisma.flashcard.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
       include: {
         document: {
@@ -126,16 +128,17 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const flashcard = await prisma.flashcard.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!flashcard) {
@@ -151,7 +154,7 @@ export async function DELETE(
     }
 
     await prisma.flashcard.delete({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     return NextResponse.json({ message: "Flashcard deleted successfully" });

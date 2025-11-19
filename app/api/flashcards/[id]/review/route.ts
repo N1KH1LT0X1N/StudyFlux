@@ -12,9 +12,10 @@ import { updateStreak } from "@/lib/streak";
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -40,7 +41,7 @@ export async function POST(
 
     // Fetch the flashcard
     const flashcard = await prisma.flashcard.findUnique({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     if (!flashcard) {
@@ -80,7 +81,7 @@ export async function POST(
 
     // Update flashcard with new SM-2 values
     const updatedFlashcard = await prisma.flashcard.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         repetitions: sm2Result.repetitions,
         easinessFactor: sm2Result.easinessFactor,
@@ -104,7 +105,7 @@ export async function POST(
       "review_flashcard",
       pointsEarned,
       {
-        flashcardId: params.id,
+        flashcardId: id,
         quality,
         documentId: flashcard.documentId,
       }
